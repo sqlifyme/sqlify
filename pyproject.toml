@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "sqletl-db"
+version = "0.1.0"
+description = "PostgreSQL compatible database on top of sqletl"
+authors = ["Digicoop <contact@digicoop.io>"]
+readme = "README.md"
+license = "MIT"
+repository = "https://github.com/digicoop/sqletl-db"
+packages = [{include = "sqletl_db"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+sqletl = { path = "../sqletl", develop = true }
+postgres-proto = { path = "../postgres-proto/", develop = true }
+dataclasses-json = "^0.6.7"
+
+[tool.poetry.scripts]
+sqletl-db = "sqletl_db.cli:main"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-cov = "^4.1.0"
+ruff = "^0.4.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
