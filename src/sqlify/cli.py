@@ -7,5 +7,5 @@ import logging
 def main():
     logging.basicConfig(level=logging.DEBUG)
     kwargs = vars(cli_arg_parser.parse_args())
-    manager = Server("data/auth.db")
+    manager = Server("sqlify.db")
     start_server(RequestHandler, manager=manager, **kwargs)

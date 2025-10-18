@@ -1,27 +1,39 @@
-[tool.poetry]
-name = "sqletl-db"
+[project]
+name = "sqlify"
 version = "0.1.0"
 description = "PostgreSQL compatible database on top of sqletl"
-authors = ["Digicoop <contact@digicoop.io>"]
+authors = [
+    {"name" = "Maxime Bouroumeau-Fuseau", email = "maxime.bouroumeau@gmail.com"}
+]
 readme = "README.md"
 license = "MIT"
-repository = "https://github.com/digicoop/sqletl-db"
-packages = [{include = "sqletl_db"}]
+requires-python = ">=3.10"
+dependencies = [
+    "sqletl~=0.1",
+    "postgres-proto~=0.1",
+    "dataclasses-json~=0.6"
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-sqletl = { path = "../sqletl", develop = true }
-postgres-proto = { path = "../postgres-proto/", develop = true }
-dataclasses-json = "^0.6.7"
+[project.urls]
+Repository = "https://github.com/sqlify/sqlify"
 
-[tool.poetry.scripts]
-sqletl-db = "sqletl_db.cli:main"
+[project.scripts]
+sqlify = "sqlify.cli:main"
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.0.0"
-pytest-cov = "^4.1.0"
-ruff = "^0.4.3"
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.4",
+]
+
+[tool.ruff]
+line-length = 100
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.8.11,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.uv.sources]
+postgres-proto = { path = "../postgres-proto/", editable = true }
+sqletl = { path = "../sqletl", editable = true }

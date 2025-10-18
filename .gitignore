@@ -1,5 +1,7 @@
-*.pyc
 __pycache__
-.venv
-*.egg-info
-auth.db
+/dist
+/.venv
+*.pyc
+.ruff_cache
+.pytest_cache
+sqlify.db

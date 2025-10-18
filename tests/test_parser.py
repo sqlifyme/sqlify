@@ -1,5 +1,5 @@
-from sqletl_db.ast import *
-from sqletl_db.parser import parse
+from sqlify.ast import *
+from sqlify.parser import parse
 
 
 def test_explain():

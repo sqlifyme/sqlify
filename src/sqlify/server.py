@@ -67,7 +67,7 @@ class Server:
         self.files_dir = files_dir if files_dir else os.path.join(os.path.dirname(sqlite_uri), "user_files")
         self.system_pwd = system_pwd
         if not system_pwd:
-            self.system_pwd = os.environ.get("SQLETL_DB_SYSTEM_PWD")
+            self.system_pwd = os.environ.get("SQLIFY_SYSTEM_PWD")
         if not os.path.exists(self.sqlite_uri):
             self.create_schema()
 

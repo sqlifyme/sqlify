@@ -1,2 +1,2 @@
 .venv
-data/auth.dn
+sqlify.db

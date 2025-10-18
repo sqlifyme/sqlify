@@ -8,7 +8,7 @@ import json
 import logging
 
 
-logger = logging.getLogger("sqletl_db")
+logger = logging.getLogger("sqlify")
 
 
 class RequestHandler(PostgresRequestHandler):
