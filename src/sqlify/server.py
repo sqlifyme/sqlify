@@ -3,7 +3,7 @@ import os
 import json
 from contextlib import contextmanager
 from sqletl.datatable import DataTable
-from .db import Database, node_handler, ddl_only
+from .db import Database, DatabaseError, node_handler, ddl_only
 from .parser import parse
 from . import ast
 
@@ -22,6 +22,25 @@ class AuthenticatedDatabase(ServerDatabase):
             dbs = self.server.get_databases() if self.role == "system" else self.server.get_databases_for_role(self.role)
             return DataTable(["database"], [[d] for d in dbs])
         return super().show(type, name)
+
+    # admins of a database can manage its grants, from any database they are connected to
+
+    @node_handler(ast.Grant, lambda node: (node.role, node.database, node.is_admin, node.alias))
+    def grant(self, role, database, is_admin=False, alias=None):
+        database = self._get_administered_database(database)
+        if not self.server.role_exists(role):
+            raise DatabaseError(f"Role {role} not found")
+        self.server.grant(role, database, is_admin, alias)
+
+    @node_handler(ast.Revoke, lambda node: (node.role, node.database))
+    def revoke(self, role, database):
+        self.server.revoke(role, self._get_administered_database(database))
+
+    def _get_administered_database(self, database):
+        name = self.server.get_administered_database(self.role, database)
+        if not name:
+            raise DatabaseError(f"Role {self.role} is not admin of database {database}")
+        return name
 
 
 class SystemDatabase(AuthenticatedDatabase):
@@ -156,6 +175,11 @@ class Server:
             cursor.execute("INSERT INTO roles (role, password) VALUES (?, ?)", (role, password))
             conn.commit()
 
+    def role_exists(self, role):
+        with self.cursor() as (conn, cursor):
+            cursor.execute("SELECT 1 FROM roles WHERE role = ?", (role,))
+            return cursor.fetchone() is not None
+
     def alter_role(self, role, password):
         with self.cursor() as (conn, cursor):
             cursor.execute("UPDATE roles SET password = ? WHERE role = ?", (password, role))
@@ -187,6 +211,15 @@ class Server:
         with self.cursor() as (conn, cursor):
             cursor.execute("SELECT database FROM grants WHERE role = ?", (role,))
             return [row[0] for row in cursor.fetchall()]
+
+    def get_administered_database(self, role, database):
+        """Returns the name of the database if the role is admin of it (database can be a name or an alias)"""
+        if role == "system":
+            return database if database in self.get_databases() else None
+        with self.cursor() as (conn, cursor):
+            cursor.execute("SELECT database FROM grants WHERE role = ? AND (database = ? OR alias = ?) AND is_admin", (role, database, database))
+            row = cursor.fetchone()
+            return row[0] if row else None
 
     def get_database_for_role(self, role, database):
         if role == "system":

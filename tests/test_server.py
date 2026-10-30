@@ -205,3 +205,69 @@ def test_create_database_with_role(server):
     assert db.name == "db1"
     assert server.authenticate("alice", "secret", "db1")
     assert server.get_database_for_role("alice", "db1").ddl_allowed
+
+
+@pytest.fixture
+def bob(server):
+    server.create_role("bob", "pwd")
+    return "bob"
+
+
+def test_admin_can_grant_and_revoke(server, alice, bob):
+    server.execute("system", "system", "GRANT ADMIN ON db1 TO alice")
+    server.execute("db1", "alice", "GRANT ON db1 TO bob AS shared")
+    assert server.authenticate("bob", "pwd", "shared")
+    assert not server.get_database_for_role("bob", "db1").ddl_allowed
+
+    server.execute("db1", "alice", "REVOKE ON db1 FROM bob")
+    assert server.get_databases_for_role("bob") == []
+
+
+def test_admin_can_grant_admin(server, alice, bob):
+    server.execute("system", "system", "GRANT ADMIN ON db1 TO alice")
+    server.execute("db1", "alice", "GRANT ADMIN ON db1 TO bob")
+    assert server.get_database_for_role("bob", "db1").ddl_allowed
+    # the new admin can manage grants too, including other admins
+    server.execute("db1", "bob", "GRANT ON db1 TO alice")
+    assert not server.get_database_for_role("alice", "db1").ddl_allowed
+
+
+def test_admin_can_grant_using_alias(server, alice, bob):
+    server.execute("system", "system", "GRANT ADMIN ON db1 TO alice AS mydb")
+    server.execute("mydb", "alice", "GRANT ON mydb TO bob")
+    assert server.get_databases_for_role("bob") == ["db1"]
+
+
+def test_admin_can_grant_from_another_database(server, alice, bob):
+    server.execute("system", "system", "CREATE DATABASE db2")
+    server.execute("system", "system", "GRANT ADMIN ON db2 TO alice")
+    # alice is connected to db1, where she is not admin
+    server.execute("db1", "alice", "GRANT ON db2 TO bob")
+    assert server.get_databases_for_role("bob") == ["db2"]
+
+
+def test_non_admin_cannot_grant_or_revoke(server, alice, bob):
+    server.grant("bob", "db1")
+    with pytest.raises(DatabaseError, match="not admin"):
+        server.execute("db1", "alice", "GRANT ADMIN ON db1 TO alice")
+    with pytest.raises(DatabaseError, match="not admin"):
+        server.execute("db1", "alice", "REVOKE ON db1 FROM bob")
+    assert not server.get_database_for_role("alice", "db1").ddl_allowed
+    assert server.get_databases_for_role("bob") == ["db1"]
+
+
+def test_admin_cannot_grant_on_other_databases(server, alice, bob):
+    server.execute("system", "system", "GRANT ADMIN ON db1 TO alice")
+    server.execute("system", "system", "CREATE DATABASE db2")
+    server.execute("system", "system", "GRANT ON db2 TO alice")
+    for sql in ["GRANT ON db2 TO bob", "GRANT ADMIN ON db2 TO alice", "GRANT ON system TO bob", "GRANT ON nope TO bob"]:
+        with pytest.raises(DatabaseError, match="not admin"):
+            server.execute("db1", "alice", sql)
+    assert server.get_databases_for_role("bob") == []
+
+
+def test_admin_cannot_grant_to_unknown_role(server, alice):
+    server.execute("system", "system", "GRANT ADMIN ON db1 TO alice")
+    for role in ["carol", "system"]:
+        with pytest.raises(DatabaseError, match=f"Role {role} not found"):
+            server.execute("db1", "alice", f"GRANT ON db1 TO {role}")
