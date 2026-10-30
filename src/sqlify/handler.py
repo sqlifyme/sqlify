@@ -1,6 +1,6 @@
 from postgres_proto.socket_handler import PostgresRequestHandler
 from postgres_proto.flow import catch_all_as_postgres_error_context, PostgresError
-from postgres_proto.sql.tokenizer import split_sql, minify_sql
+from postgres_proto.sql.parser import iter_tables
 from sqletl.errors import SqletlError
 from .db import DatabaseError
 import re
@@ -42,8 +42,10 @@ class RequestHandler(PostgresRequestHandler):
                 dt = self.server.manager.execute(self.database, self.user, query)
                 return "SELECT", format_rows(dt), dt.colnames
             except Exception as e:
-                parts = split_sql(minify_sql(query), ("SELECT", "FROM"))
-                if parts.get("FROM") and ("information_schema" in parts["FROM"].lower() or "pg_" in parts["FROM"].lower()):
+                if stmt_type == "SELECT" and any(
+                    t.schema == "information_schema" or "pg_" in f"{t.schema}.{t.name}".lower()
+                    for t in iter_tables(stmt_info.tables)
+                ):
                     return self.handle_postgres_builtins_query(stmt_type, stmt_info)
                 if isinstance(e, SyntaxError):
                     raise PostgresError(f"Syntax error: {str(e)}")

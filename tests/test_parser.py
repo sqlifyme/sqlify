@@ -1,10 +1,11 @@
 from sqlify.ast import *
+import pytest
 from sqlify.parser import parse
 
 
 def test_explain():
     sql = "EXPLAIN SELECT * FROM my_table"
-    assert parse(sql) == Explain(Select([], [Table("my_table")]))
+    assert parse(sql) == Explain(Select(["*"], [Table("my_table")]))
 
 
 def test_create_alias():
@@ -22,13 +23,13 @@ def test_drop_alias():
 
 def test_create_view():
     sql = "CREATE VIEW my_view AS SELECT * FROM my_table"
-    assert parse(sql) == CreateView("my_view", Select([], [Table("my_table")]))
+    assert parse(sql) == CreateView("my_view", Select(["*"], [Table("my_table")]))
 
     sql = "CREATE MATERIALIZED VIEW my_view AS SELECT * FROM my_table"
-    assert parse(sql) == CreateView("my_view", Select([], [Table("my_table")]), True)
+    assert parse(sql) == CreateView("my_view", Select(["*"], [Table("my_table")]), True)
 
 
-def text_refresh_materialized_view():
+def test_refresh_materialized_view():
     sql = "REFRESH MATERIALIZED VIEW my_view"
     assert parse(sql) == RefreshMaterializedView("my_view")
 
@@ -129,3 +130,70 @@ def test_grant():
 def test_revoke():
     sql = "REVOKE ON my_database FROM my_user"
     assert parse(sql) == Revoke("my_user", "my_database")
+
+def test_quoted_values():
+    sql = """CREATE CREDENTIALS ON "http://example.com/path" AUTH 'username:password';"""
+    assert parse(sql) == CreateCredentials("http://example.com/path", "auth", "username:password", None)
+
+    sql = """create credentials cred1 on "http://example.com/path" token 'token'"""
+    assert parse(sql) == CreateCredentials("http://example.com/path", "token", "token", "cred1")
+
+    sql = 'DROP CREDENTIALS ON "http://example.com/path"'
+    assert parse(sql) == DropCredentials("http://example.com/path")
+
+
+def test_create_header():
+    sql = "CREATE HEADER ON http://example.com AS 'X-Header: value'"
+    assert parse(sql) == CreateHeader("http://example.com", "X-Header", "value")
+
+
+def test_drop_header():
+    sql = "DROP HEADER http://example.com"
+    assert parse(sql) == DropHeader("http://example.com")
+
+
+def test_create_schema_multiline():
+    sql = """
+    CREATE SCHEMA WITH
+        TABLES AS (
+            SELECT id, title->0->plain_text AS name
+            FROM "POST https://api.notion.com/v1/search?JSON#results"
+        )
+        ROWS AS (SELECT * FROM "https://api.notion.com/v1/databases/$TABLE[id]/query")
+    """
+    node = parse(sql)
+    assert node.tables.startswith("SELECT id, title->0->plain_text AS name")
+    assert node.tables.endswith('FROM "POST https://api.notion.com/v1/search?JSON#results"')
+    assert node.columns is None
+    assert node.rows == 'SELECT * FROM "https://api.notion.com/v1/databases/$TABLE[id]/query"'
+
+
+def test_alter_role():
+    sql = "ALTER ROLE my_user PASSWORD my_password"
+    assert parse(sql) == AlterRole("my_user", "my_password")
+
+    sql = "ALTER ROLE my_user PASSWORD NULL"
+    assert parse(sql) == AlterRole("my_user", None)
+
+
+def test_drop_role_with_databases():
+    sql = "DROP ROLE my_user WITH DATABASES"
+    assert parse(sql) == DropRole("my_user", True)
+
+
+def test_grant_alias():
+    sql = "GRANT ON my_database TO my_user AS my_alias"
+    assert parse(sql) == Grant("my_user", "my_database", alias="my_alias")
+
+
+def test_show():
+    assert parse("SHOW TABLES") == Show("tables")
+    assert parse('SHOW TABLE "my table"') == Show("table", "my table")
+    assert parse("SHOW transaction isolation level") == Show("transaction", "isolation level")
+
+
+def test_invalid():
+    with pytest.raises(SyntaxError):
+        parse("CREATE ALIAS my_alias")
+    with pytest.raises(SyntaxError):
+        parse("DROP SOMETHING foo")

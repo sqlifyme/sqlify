@@ -2,7 +2,6 @@ from sqletl.ctx import Context as BaseContext, ContextError
 from sqletl.protocols import (File, Http as BaseHttp, Fsspec as BaseFsspec, S3 as BaseS3, Postgresql as BasePostgresql,
                               Mysql as BaseMysql, GoogleSheets as BaseGoogleSheets, prepare_url)
 from sqletl.reader import read_file, json_as_datatable
-from postgres_proto.sql.tokenizer import tokenize_list
 import itertools
 import jsonpath_ng
 import urllib.parse

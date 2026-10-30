@@ -1,0 +1,106 @@
+// sqlify statements, appended to the sqletl grammar (see parser.py).
+// Rules and terminals from sqletl (select, with_query, identifier, paren_group, NAME,
+// STRING, QUOTED_NAME, NULL, _AS, _ON, _FROM, _WITH...) are available here.
+
+%override start: statement ";"?
+
+?statement: select
+          | with_query
+          | explain
+          | create_alias
+          | create_view
+          | create_scheme
+          | create_credentials
+          | create_pagination
+          | create_header
+          | create_database
+          | create_schema
+          | create_role
+          | drop_alias
+          | drop_view
+          | drop_scheme
+          | drop_credentials
+          | drop_pagination
+          | drop_header
+          | drop_database
+          | drop_schema
+          | drop_role
+          | refresh_view
+          | refresh_schema
+          | alter_role
+          | grant
+          | revoke
+          | show
+
+?query: select | with_query
+
+explain: _EXPLAIN query
+
+create_alias: _CREATE _ALIAS value _AS value
+create_view: _CREATE [MATERIALIZED] _VIEW value _AS query
+create_scheme: _CREATE _SCHEME value _AS value
+create_credentials: _CREATE _CREDENTIALS [value] _ON value credentials_type value
+credentials_type: TOKEN | AUTH | HEADER | PARAM | REMOTE
+create_pagination: _CREATE _PAGINATION _ON value _AS identifier "=" NAME "(" PAGINATION_VALUE ")"
+create_header: _CREATE HEADER _ON value _AS value
+create_database: _CREATE _DATABASE value
+create_schema: _CREATE _SCHEMA [_WITH] _TABLES _AS paren_group [_COLUMNS _AS paren_group] _ROWS _AS paren_group
+create_role: _CREATE _ROLE value [_PASSWORD value]
+
+drop_alias: _DROP _ALIAS value
+drop_view: _DROP _VIEW value
+drop_scheme: _DROP _SCHEME value
+drop_credentials: _DROP _CREDENTIALS [_ON] value
+drop_pagination: _DROP _PAGINATION value
+drop_header: _DROP HEADER value
+drop_database: _DROP _DATABASE value
+drop_schema: _DROP _SCHEMA
+drop_role: _DROP _ROLE value [_WITH DATABASES]
+
+refresh_view: _REFRESH MATERIALIZED _VIEW value
+refresh_schema: _REFRESH _SCHEMA
+
+alter_role: _ALTER _ROLE value _PASSWORD (value | NULL)
+
+grant: _GRANT [ADMIN] _ON value _TO value [_AS value]
+revoke: _REVOKE _ON value _FROM value
+
+show: _SHOW NAME value*
+
+// names and urls, quoted or not
+value: BARE_VALUE | QUOTED_NAME | STRING
+
+// --- terminals
+
+BARE_VALUE: /[^\s'"();][^\s;]*/
+PAGINATION_VALUE: /[^)]+/
+
+_EXPLAIN: "EXPLAIN"i
+_CREATE: "CREATE"i
+_DROP: "DROP"i
+_REFRESH: "REFRESH"i
+_ALTER: "ALTER"i
+_GRANT: "GRANT"i
+_REVOKE: "REVOKE"i
+_SHOW: "SHOW"i
+_ALIAS: "ALIAS"i
+_VIEW: "VIEW"i
+_SCHEME: "SCHEME"i
+_CREDENTIALS: "CREDENTIALS"i
+_PAGINATION: "PAGINATION"i
+_DATABASE: "DATABASE"i
+_SCHEMA: "SCHEMA"i
+_TABLES: "TABLES"i
+_COLUMNS: "COLUMNS"i
+_ROWS: "ROWS"i
+_ROLE: "ROLE"i
+_PASSWORD: "PASSWORD"i
+_TO: "TO"i
+MATERIALIZED: "MATERIALIZED"i
+DATABASES: "DATABASES"i
+ADMIN: "ADMIN"i
+TOKEN: "TOKEN"i
+AUTH: "AUTH"i
+HEADER: "HEADER"i
+PARAM: "PARAM"i
+REMOTE: "REMOTE"i
