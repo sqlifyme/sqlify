@@ -180,11 +180,13 @@ class Database:
         return plan(query)
     
     @node_handler(ast.CreateAlias, lambda node: (node.name, node.replace_with))
+    @ddl_only
     def create_alias(self, name, replace_with):
         self.aliases[name] = replace_with
         self.ddl_callback(self)
 
     @node_handler(ast.DropAlias, lambda node: (node.name,))
+    @ddl_only
     def drop_alias(self, name):
         self.aliases.pop(name, None)
         self.ddl_callback(self)
@@ -214,11 +216,11 @@ class Database:
         view = self.get_view(name)
         if view.materialized:
             return self.cache.get(self._view_cache_key_cols(view.name))
-        if isinstance(view.cols, str):
-            return [r[0] for r in self.execute(view.cols)]
-        if not view.cols:
+        if isinstance(view.columns, str):
+            return [r[0] for r in self.execute(view.columns)]
+        if not view.columns:
             return []
-        return view.cols
+        return view.columns
     
     def fetch_view(self, name, params=None, ctx=None):
         view = self.get_view(name)
@@ -235,7 +237,8 @@ class Database:
         if not view.materialized:
             raise DatabaseError("View is not materialized")
         dt = view.pipeline.run(self.create_context())
-        self.cache.set(name, dt)
+        self.cache.set(self._view_cache_key_cols(name), dt.colnames)
+        self.cache.set(self._view_cache_key_rows(name), list(dt.rows))
 
     @node_handler(ast.DropView, lambda node: (node.name,))
     @ddl_only
@@ -244,11 +247,13 @@ class Database:
         self.ddl_callback(self)
 
     @node_handler(ast.CreateScheme, lambda node: (node.scheme, node.uri_template))
+    @ddl_only
     def create_scheme(self, scheme, uri_template):
         self.schemes[scheme] = uri_template
         self.ddl_callback(self)
 
     @node_handler(ast.DropScheme, lambda node: (node.scheme,))
+    @ddl_only
     def drop_scheme(self, scheme):
         self.schemes.pop(scheme, None)
         self.ddl_callback(self)

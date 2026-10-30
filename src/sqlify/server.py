@@ -45,7 +45,7 @@ class SystemDatabase(AuthenticatedDatabase):
     def alter_role(self, role, password=None):
         self.server.alter_role(role, password)
 
-    @node_handler(ast.DropRole, lambda node: (node.role, node.with_database))
+    @node_handler(ast.DropRole, lambda node: (node.role, node.with_databases))
     @ddl_only
     def drop_role(self, role, with_databases=False):
         self.server.drop_role(role, with_databases)
@@ -73,14 +73,14 @@ class Server:
 
     @contextmanager
     def cursor(self, cursor=None):
-        conn = None
-        if not cursor:
-            conn = sqlite3.connect(self.sqlite_uri)
-            cursor = conn.cursor()
+        if cursor:
+            yield (cursor.connection, cursor)
+            return
+        conn = sqlite3.connect(self.sqlite_uri)
+        cursor = conn.cursor()
         yield (conn, cursor)
-        if conn:
-            cursor.close()
-            conn.close()
+        cursor.close()
+        conn.close()
 
     def create_schema(self):
         with self.cursor() as (conn, cursor):
@@ -111,9 +111,9 @@ class Server:
     def create_database(self, database, role=None, cursor=None):
         with self.cursor(cursor) as (conn, cursor):
             cursor.execute("INSERT INTO databases (name, config) VALUES (?, ?)", (database, '{}'))
-            conn.commit()
             if role:
                 self.grant(role, database, is_admin=True, cursor=cursor)
+            conn.commit()
             return self.get_database(database, cursor=cursor)
         
     def drop_database(self, database):
@@ -164,13 +164,16 @@ class Server:
     def drop_role(self, role, with_databases=False):
         with self.cursor() as (conn, cursor):
             if with_databases:
-                cursor.execute("DELETE FROM databases WHERE database IN (SELECT database FROM grants WHERE role = ?)", (role,))
+                # only drop the databases the role administers, not the ones shared with it
+                owned = "SELECT database FROM grants WHERE role = ? AND is_admin"
+                cursor.execute(f"DELETE FROM grants WHERE database IN ({owned}) AND role != ?", (role, role))
+                cursor.execute(f"DELETE FROM databases WHERE name IN ({owned})", (role,))
             cursor.execute("DELETE FROM grants WHERE role = ?", (role,))
             cursor.execute("DELETE FROM roles WHERE role = ?", (role,))
             conn.commit()
 
-    def grant(self, role, database, is_admin=None, alias=None):
-        with self.cursor() as (conn, cursor):
+    def grant(self, role, database, is_admin=None, alias=None, cursor=None):
+        with self.cursor(cursor) as (conn, cursor):
             cursor.execute("""INSERT INTO grants (role, database, is_admin, alias) VALUES (?, ?, ?, ?)
                            ON CONFLICT (role, database) DO UPDATE SET is_admin = excluded.is_admin, alias = excluded.alias""", (role, database, is_admin, alias))
             conn.commit()
