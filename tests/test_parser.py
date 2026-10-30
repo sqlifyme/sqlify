@@ -1,6 +1,7 @@
 from sqlify.ast import *
 import pytest
 from sqlify.parser import parse
+from sqletl.errors import ParserError
 
 
 def test_explain():
@@ -74,6 +75,15 @@ def test_create_pagination():
 
     sql = "CREATE PAGINATION ON http://example.com AS page=header(X-Next-Page)"
     assert parse(sql) == CreatePagination("http://example.com", "page", "header", "X-Next-Page")
+
+    with pytest.raises(ParserError):
+        parse("CREATE PAGINATION ON http://example.com AS page<body(next)")
+
+
+def test_quoted_name_equal():
+    # a "=" terminal in sqlify's grammar used to shadow COMP_OP after a quoted name
+    sql = 'SELECT nom FROM "https://example.com" WHERE "?codePostal" = 75001'
+    assert parse(sql).where.operator == "="
 
 
 def test_drop_pagination():

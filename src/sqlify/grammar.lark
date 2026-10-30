@@ -41,7 +41,8 @@ create_view: _CREATE [MATERIALIZED] _VIEW value _AS query
 create_scheme: _CREATE _SCHEME value _AS value
 create_credentials: _CREATE _CREDENTIALS [value] _ON value credentials_type value
 credentials_type: TOKEN | AUTH | HEADER | PARAM | REMOTE
-create_pagination: _CREATE _PAGINATION _ON value _AS identifier "=" NAME "(" PAGINATION_VALUE ")"
+// COMP_OP rather than "=": a separate "=" terminal would shadow COMP_OP after a QUOTED_NAME
+create_pagination: _CREATE _PAGINATION _ON value _AS identifier COMP_OP NAME "(" PAGINATION_VALUE ")"
 create_header: _CREATE HEADER _ON value _AS value
 create_database: _CREATE _DATABASE value
 create_schema: _CREATE _SCHEMA [_WITH] _TABLES _AS paren_group [_COLUMNS _AS paren_group] _ROWS _AS paren_group

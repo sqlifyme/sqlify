@@ -1166,14 +1166,20 @@ wheels = [
 
 [[package]]
 name = "postgres-proto"
-version = "0.2.0"
-source = { registry = "https://pypi.org/simple" }
+version = "0.2.1"
+source = { editable = "../postgres-proto" }
 dependencies = [
     { name = "sqlparse" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/03/93/d1feacb30c6d90e43d10edcc551c980c13de724ed70cb20d24f88f3fde46/postgres_proto-0.2.0.tar.gz", hash = "sha256:f0eac9f334bb51be699ee09fae6d72189a3c2bfae0063bbc474ef07648e8a762", size = 13025, upload-time = "2026-10-30T10:58:31.565Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2d/7a/1e565eb1b936bfe7029761b05ecb83b67ac44392b82359d81d1cd3c0d967/postgres_proto-0.2.0-py3-none-any.whl", hash = "sha256:578372112bee434dbaa5d1172b2be1598643a6b8541c019a87d35a02d1dac342", size = 17654, upload-time = "2026-10-30T10:58:30.168Z" },
+
+[package.metadata]
+requires-dist = [{ name = "sqlparse", specifier = ">=0.6.0" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.4.1" },
+    { name = "pytest-cov", specifier = ">=6.2.1" },
+    { name = "ruff", specifier = ">=0.12.4" },
 ]
 
 [[package]]
@@ -1606,7 +1612,7 @@ wheels = [
 [[package]]
 name = "sqletl"
 version = "0.2.0"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "../sqletl" }
 dependencies = [
     { name = "fsspec" },
     { name = "jsonpath-ng" },
@@ -1621,9 +1627,29 @@ dependencies = [
     { name = "rich" },
     { name = "s3fs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/52/84/469cbd6f8635a588fe69920f6a57d601da8d000ee13e71cda9aded44a9da/sqletl-0.2.0.tar.gz", hash = "sha256:3d573ce33d4d4c271add5c0e451a8b62f48156112abaac9f667a10d15f029316", size = 24398, upload-time = "2026-10-30T10:56:20.08Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ae/81/50d7a1d42c8043aa84453f5003dbb7e09fa341500d14c3358a851a343bb4/sqletl-0.2.0-py3-none-any.whl", hash = "sha256:d9e2945d7f5bca084d7ba68ebe569a81ae2bf354b02b4443060efcd90d578e5a", size = 27738, upload-time = "2026-10-30T10:56:18.824Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "fsspec", specifier = "~=2026.9" },
+    { name = "jsonpath-ng", specifier = "~=1.15" },
+    { name = "lark", specifier = "~=1.3" },
+    { name = "mysql-connector-python", specifier = "~=26.10" },
+    { name = "openpyxl", specifier = "~=3.1" },
+    { name = "pandas", specifier = "~=3.1" },
+    { name = "psycopg", extras = ["binary"], specifier = "~=3.3" },
+    { name = "pyarrow", specifier = "~=26.0" },
+    { name = "pyparsing", specifier = "~=3.3" },
+    { name = "requests", specifier = "~=2.34" },
+    { name = "rich", specifier = ">=15.0.0" },
+    { name = "s3fs", specifier = "~=2026.9" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mkdocs-material", specifier = ">=9.8.0" },
+    { name = "pytest", specifier = ">=9.2.0" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "ruff", specifier = ">=0.17.3" },
 ]
 
 [[package]]
@@ -1647,8 +1673,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "dataclasses-json", specifier = "~=0.6" },
-    { name = "postgres-proto", specifier = "~=0.2" },
-    { name = "sqletl", specifier = "~=0.2" },
+    { name = "postgres-proto", editable = "../postgres-proto" },
+    { name = "sqletl", editable = "../sqletl" },
 ]
 
 [package.metadata.requires-dev]

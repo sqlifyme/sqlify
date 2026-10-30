@@ -1,4 +1,5 @@
 from lark import Lark, UnexpectedInput, UnexpectedToken
+from lark.exceptions import VisitError
 from importlib.resources import files
 from sqletl.parser import ToAST as BaseToAST, unquote
 from sqletl.errors import ParserError
@@ -20,7 +21,12 @@ def parse(sql):
         raise ParserError(f"Invalid SQL at line {e.line}, column {e.column}:\n{e.get_context(sql)}") from e
     except UnexpectedInput as e:
         raise ParserError(f"Invalid SQL at line {e.line}, column {e.column}:\n{e.get_context(sql)}") from e
-    return ToAST(sql).transform(tree)
+    try:
+        return ToAST(sql).transform(tree)
+    except VisitError as e:
+        if isinstance(e.orig_exc, ParserError):
+            raise e.orig_exc from None
+        raise
 
 
 class ToAST(BaseToAST):
@@ -54,7 +60,9 @@ class ToAST(BaseToAST):
         return c[0].lower()
 
     def create_pagination(self, c):
-        url, param, location, name = c
+        url, param, op, location, name = c
+        if op != "=":
+            raise ParserError(f"Invalid SQL: expected '=' in CREATE PAGINATION, got '{op}'")
         return ast.CreatePagination(url, param, location.lower(), name.strip())
 
     def create_header(self, c):
