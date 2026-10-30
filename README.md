@@ -1,6 +1,6 @@
 # SQLify
 
-PostgreSQL compatible server on top of [sqletl](https://github.com/sqlify/sqletl).
+PostgreSQL compatible server on top of [sqletl](https://sqlifyme.github.io/sqletl/).
 
 SQLify is a database that stores no data. Tables are remote data sources (HTTP APIs, files,
 other databases...) queried in real time using SQL. Any PostgreSQL client (psql, BI tools,
@@ -55,5 +55,8 @@ Then, connected to `mydb`, store credentials and create views:
 
 ## Documentation
 
-See the [docs](docs/) folder: [credentials](docs/credentials.md), [databases and schemas](docs/database.md),
-[views](docs/views.md).
+See the [docs](docs/) folder: [SQLETL](docs/sqletl.md), [data sources](docs/sources.md),
+[credentials](docs/credentials.md), [views](docs/views.md), [databases and schemas](docs/database.md),
+[roles](docs/roles.md).
+
+The query language is documented at [sqlifyme.github.io/sqletl](https://sqlifyme.github.io/sqletl/).

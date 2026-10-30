@@ -1,8 +1,9 @@
 site_name: SQLify
-site_url: https://github.com/sqlify/sqlify
+repo_url: https://github.com/sqlifyme/sqlify
 nav:
   - index.md
   - sqletl.md
+  - sources.md
   - credentials.md
   - views.md
   - database.md
@@ -37,4 +38,3 @@ markdown_extensions:
 
 plugins:
   - search
-  - callouts
